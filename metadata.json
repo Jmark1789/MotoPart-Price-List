@@ -1,0 +1,6 @@
+{
+  "name": "MotoParts Catalog & Sheet Sync",
+  "description": "Searchable motorcycle parts pricelist with live categories, stock status, and real-time Google Sheets database sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
