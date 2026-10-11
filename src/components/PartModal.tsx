@@ -69,7 +69,7 @@ export const PartModal: React.FC<PartModalProps> = ({
       id: editingPart?.id || `part-${Date.now()}`,
       partNumber: formData.partNumber!.trim(),
       itemName: formData.itemName!.trim(),
-      brand: formData.brand!.trim(),
+      brand: formData.brand!.trim().toUpperCase(),
       srpPrice: Number(formData.srpPrice) || 0,
       shopPrice: Number(formData.shopPrice) || 0,
       updatedAt: new Date().toISOString(),
@@ -170,11 +170,11 @@ export const PartModal: React.FC<PartModalProps> = ({
             <input
               type="text"
               value={formData.brand || ''}
-              onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-              placeholder="e.g. Brembo, Akrapovic, Ohlins, NGK, D.I.D, Motul..."
+              onChange={(e) => setFormData({ ...formData, brand: e.target.value.toUpperCase() })}
+              placeholder="e.g. BREMBO, AKRAPOVIC, OHLINS, NGK, D.I.D, MOTUL..."
               className={`w-full bg-slate-950 border ${
                 errors.brand ? 'border-red-500' : 'border-slate-700'
-              } rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none focus:border-amber-500`}
+              } rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-white uppercase placeholder-slate-500 outline-none focus:border-amber-500`}
             />
             {errors.brand && (
               <p className="text-xs text-red-400 mt-1">{errors.brand}</p>

@@ -298,7 +298,11 @@ export default function App() {
     try {
       const { parts: sheetParts } = await readPartsFromSheet(token, syncStatus.spreadsheetId);
       if (sheetParts.length > 0) {
-        setParts(sheetParts);
+        const normalized = sheetParts.map((p) => ({
+          ...p,
+          brand: (p.brand || '').toUpperCase(),
+        }));
+        setParts(normalized);
         showToast(`Imported ${sheetParts.length} items from Google Sheet`);
       } else {
         showToast('Google Sheet has no data rows', 'info');
@@ -321,15 +325,19 @@ export default function App() {
 
   // Save part handler (Add / Edit)
   const handleSavePart = async (savedPart: MotorPart) => {
+    const normalizedPart = {
+      ...savedPart,
+      brand: (savedPart.brand || '').toUpperCase(),
+    };
     let updatedList: MotorPart[];
-    const exists = parts.some((p) => p.id === savedPart.id);
+    const exists = parts.some((p) => p.id === normalizedPart.id);
 
     if (exists) {
-      updatedList = parts.map((p) => (p.id === savedPart.id ? savedPart : p));
-      showToast(`Updated "${savedPart.itemName}"`);
+      updatedList = parts.map((p) => (p.id === normalizedPart.id ? normalizedPart : p));
+      showToast(`Updated "${normalizedPart.itemName}"`);
     } else {
-      updatedList = [savedPart, ...parts];
-      showToast(`Added "${savedPart.itemName}"`);
+      updatedList = [normalizedPart, ...parts];
+      showToast(`Added "${normalizedPart.itemName}"`);
     }
 
     setParts(updatedList);
