@@ -1,0 +1,9 @@
+<resources>
+    <color name="primary">#f59e0b</color>
+    <color name="primary_dark">#d97706</color>
+    <color name="background_dark">#090d16</color>
+    <color name="surface_dark">#0f172a</color>
+    <color name="card_border">#1e293b</color>
+    <color name="text_primary">#f8fafc</color>
+    <color name="text_secondary">#94a3b8</color>
+</resources>

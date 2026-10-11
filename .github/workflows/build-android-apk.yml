@@ -26,7 +26,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Run Gemini CLI Android migration
+        continue-on-error: true
+        if: "!hashFiles('android-app/app/build.gradle.kts')"
         uses: google-github-actions/run-gemini-cli@v0.1.22
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
