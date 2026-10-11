@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User } from 'firebase/auth';
 import {
   initAuth,
-  googleSignIn,
   logout,
   getAccessToken,
   setCachedAccessToken,
@@ -24,6 +23,7 @@ import { PartModal } from './components/PartModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { SheetConfigModal } from './components/SheetConfigModal';
 import { PrintPricelistModal } from './components/PrintPricelistModal';
+import { AuthModal } from './components/AuthModal';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const STORAGE_PARTS_KEY = 'motoparts_items_php_v1';
@@ -31,8 +31,9 @@ const STORAGE_SHEET_ID_KEY = 'motoparts_sheet_id_php_v1';
 const STORAGE_SHEET_TITLE_KEY = 'motoparts_sheet_title_php_v1';
 
 export default function App() {
-  // Auth state
+  // Firebase Auth user state
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Parts dataset in Philippine Peso (Part #, Item Name, Brand, SRP Price, Shop Price)
@@ -137,7 +138,7 @@ export default function App() {
     if (!token) {
       setSyncStatus((prev) => ({
         ...prev,
-        error: 'Google authentication required to sync with Google Sheet. Please sign in.',
+        error: 'Google authentication required to sync with Google Sheet. Please sign in with Google.',
       }));
       return;
     }
@@ -167,40 +168,12 @@ export default function App() {
     }
   };
 
-  // Sign in handler
-  const handleLogin = async () => {
-    setIsLoggingIn(true);
-    try {
-      const res = await googleSignIn();
-      if (res) {
-        setUser(res.user);
-        showToast(`Signed in as ${res.user.displayName || res.user.email}`);
-        if (syncStatus.spreadsheetId) {
-          try {
-            const meta = await fetchSpreadsheetMetadata(res.accessToken, syncStatus.spreadsheetId);
-            setSyncStatus((prev) => ({
-              ...prev,
-              spreadsheetTitle: meta.title,
-              error: null,
-            }));
-          } catch (e) {
-            console.warn('Could not verify existing spreadsheet:', e);
-          }
-        }
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Google sign-in was cancelled or failed', 'error');
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
   // Sign out handler
   const handleLogout = async () => {
     try {
       await logout();
       setUser(null);
-      showToast('Signed out of Google account', 'info');
+      showToast('Signed out of Firebase account', 'info');
     } catch (err) {
       console.error('Error during logout', err);
     }
@@ -210,18 +183,9 @@ export default function App() {
   const handleCreateNewSheet = async () => {
     let token = await getAccessToken();
     if (!token) {
-      try {
-        const res = await googleSignIn();
-        if (res) {
-          token = res.accessToken;
-          setUser(res.user);
-        } else {
-          return;
-        }
-      } catch (err: any) {
-        showToast('Google sign-in required to create spreadsheet', 'error');
-        return;
-      }
+      setIsAuthModalOpen(true);
+      showToast('Please sign in with Google to create a spreadsheet in Google Drive', 'info');
+      return;
     }
 
     setSyncStatus((prev) => ({ ...prev, isSyncing: true, error: null }));
@@ -267,18 +231,9 @@ export default function App() {
 
     let token = await getAccessToken();
     if (!token) {
-      try {
-        const res = await googleSignIn();
-        if (res) {
-          token = res.accessToken;
-          setUser(res.user);
-        } else {
-          return;
-        }
-      } catch (err: any) {
-        showToast('Google sign-in required to connect sheet', 'error');
-        return;
-      }
+      setIsAuthModalOpen(true);
+      showToast('Please sign in with Google to connect and read from Google Sheets', 'info');
+      return;
     }
 
     setSyncStatus((prev) => ({ ...prev, isSyncing: true, error: null }));
@@ -334,7 +289,8 @@ export default function App() {
 
     let token = await getAccessToken();
     if (!token) {
-      showToast('Please sign in to read from Google Sheet', 'error');
+      setIsAuthModalOpen(true);
+      showToast('Please sign in with Google to read from Google Sheet', 'error');
       return;
     }
 
@@ -521,7 +477,7 @@ export default function App() {
         user={user}
         syncStatus={syncStatus}
         isLoggingIn={isLoggingIn}
-        onLogin={handleLogin}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
         onOpenAddModal={() => {
           setEditingPart(null);
@@ -590,14 +546,28 @@ export default function App() {
             <span>Columns: Part #, Item Name, Brand, SRP Price, Shop Price</span>
           </div>
           <div className="flex items-center space-x-2 text-slate-400">
-            {syncStatus.isConnected ? (
-              <span className="text-emerald-400 font-medium">● Connected to Google Sheet</span>
+            {user ? (
+              <span className="text-emerald-400 font-medium">
+                ● Signed in as {user.displayName || user.email}
+              </span>
             ) : (
-              <span>Google Sheet not connected</span>
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="text-amber-400 hover:text-amber-300 underline"
+              >
+                Sign in with Firebase
+              </button>
             )}
           </div>
         </div>
       </footer>
+
+      {/* Firebase Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={(msg) => showToast(msg, 'success')}
+      />
 
       {/* Add / Edit Part Modal */}
       <PartModal
@@ -628,7 +598,7 @@ export default function App() {
         user={user}
         syncStatus={syncStatus}
         isLoggingIn={isLoggingIn}
-        onLogin={handleLogin}
+        onLogin={() => setIsAuthModalOpen(true)}
         onCreateNewSheet={handleCreateNewSheet}
         onConnectExistingSheet={handleConnectExistingSheet}
         onDisconnectSheet={handleDisconnectSheet}
